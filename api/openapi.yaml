@@ -1,0 +1,195 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: shopping
+  description: shopping cart api
+  
+servers:
+  - url: http://localhost:9080/api
+    description: locally hosted api
+
+components:
+  schemas:
+  
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+          
+    CartItem:
+      type: object
+      required:
+      - sku
+      - quantity
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+          
+          
+    Promotion:
+      type: object
+      required:
+        - buy
+        - type
+        - info
+      properties:
+        buy:
+          type: integer
+        type: 
+          type: string
+        info:
+          type: string
+        units:
+          type: integer
+        rate:
+          type: number
+          format: float
+          multipleOf: 0.01
+        item:
+          type: string
+          
+    Cart:
+      type: object
+      required:
+        - id
+        - state
+      properties:
+        id:
+          type: string
+        state:
+          $ref: '#/components/schemas/CartState'
+          
+    CartState:
+      type: object
+      required:
+        - baseAmount
+        - cartAmount
+        - lineItems
+      properties:
+        baseAmount:
+          type: number
+          format: float
+          multipleOf: 0.01
+        cartAmount:
+          type: number
+          format: float
+          multipleOf: 0.01
+        lineItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluatedItem'
+    
+    EvaluatedItem:
+      type: object
+      required:
+      - sku
+      - quantity
+      - listPrice
+      - salePrice
+      - discount
+      - promotions
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+        listPrice:
+          type: number
+          format: float
+          multipleOf: 0.01
+        salePrice:
+          type: number
+          format: float
+          multipleOf: 0.01
+        discount:
+          type: number
+          format: float
+          multipleOf: 0.01
+        promotions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Promotion'
+          
+  requestBodies:
+    NewCartRq:
+      content:
+        application/json:
+          examples:
+            googlehomes:
+              summary: buy three google homes at price of two
+              value:
+                lineItems:
+                  - sku: 120P90
+                    quantity: 3
+            macbookpro:
+              summary: free raspberry pi with macbook pro
+              value:
+                lineItems:
+                  - sku: 43N23P
+                    quantity: 1
+            alexa:
+              summary: buy three or more alexa speakers and have 10 percent discount on all
+              value:
+                lineItems:
+                  - sku: A304SD
+                    quantity: 3
+          schema:
+            required:
+              - lineItems
+            properties:
+              lineItems:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartItem'
+  
+  
+  responses:
+    ErrorRs:
+      description: standard error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    CartRs:
+      description: server side evaluated standard cart response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Cart'
+  
+paths:
+  /cart:
+    post:
+      operationId: newCart
+      description: create a cart with given list of items
+      requestBody:
+        $ref: '#/components/requestBodies/NewCartRq'
+      responses:
+        200:
+          $ref: '#/components/responses/CartRs'
+        default:
+          $ref: '#/components/responses/ErrorRs'
+          
+  /cart/{id}:
+    get:
+      operationId: getCart
+      description: for a given cart identifier return the state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          $ref: '#/components/responses/CartRs'
+        default:
+          $ref: '#/components/responses/ErrorRs'

@@ -1,0 +1,38 @@
+version: '3.7'
+
+services:
+
+  
+  
+  # eshop:
+  #   hostname: eshop
+  #   container_name: eshop
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     args:
+  #       APP_NAME : eshop
+  #   image:
+  #     gattal/eshop
+  #   command: sh -c "printenv && sleep 5s && ./eshop migrate up && ./eshop serve"
+  #   environment:
+  #    - APP_DB_URL=postgres://root@crdb:26257/eshop?sslmode=disable
+  #    - APP_DB_MIGRATEURL=cockroachdb://root@crdb:26257?sslmode=disable
+  #   depends_on:
+  #     - crdb
+  #   ports: 
+  #     - 9080:9080
+  #   networks:
+  #     - default
+
+  crdb:
+    container_name: crdb
+    hostname: crdb  
+    image: cockroachdb/cockroach:v20.2.5
+    ports:
+      - 26257:26257
+      - 8080:8080
+    command: start-single-node --insecure
+    networks:
+      - default
+  
