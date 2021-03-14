@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/go-logrusutil/logrusutil/logctx"
 	hc "github.com/heptiolabs/healthcheck"
+	"github.com/jmoiron/sqlx"
 	"github.com/spf13/cobra"
 
 	"github.com/govinda-attal/eshop/internal/eshop"
@@ -37,7 +39,7 @@ func serve(cmd *cobra.Command, args []string) {
 	log.Info("crdb ping success")
 
 	srv := eshop.NewApi(ctx, eshop.NewCartService(ctx, db))
-	ws, err := setupWebServer(ctx, srv)
+	ws, err := setupWebServer(ctx, srv, db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,8 +67,8 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-func setupWebServer(ctx context.Context, srv api.ServerInterface) (*web.Server, error) {
-	health, err := healthHandler()
+func setupWebServer(ctx context.Context, srv api.ServerInterface, db *sqlx.DB) (*web.Server, error) {
+	health, err := healthHandler(db)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +86,8 @@ func setupWebServer(ctx context.Context, srv api.ServerInterface) (*web.Server, 
 	return ws, nil
 }
 
-func healthHandler() (http.HandlerFunc, error) {
-	return hc.NewHandler().ReadyEndpoint, nil
+func healthHandler(db *sqlx.DB) (http.HandlerFunc, error) {
+	health := hc.NewHandler()
+	health.AddReadinessCheck("database", hc.DatabasePingCheck(db.DB, 1*time.Second))
+	return health.ReadyEndpoint, nil
 }

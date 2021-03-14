@@ -61,6 +61,15 @@ make serve
 
 Once service is running browse to [local swagger-ui](http://localhost:8080) to view the open-api specification and test the *eshop* service.
 
+
+### Nice to haves
+
+With *eshop* service up and running
+
+* health check: http://localhost:9080/health?full=1
+* default metrics: http://localhost:9080/metrics
+* raw open-api spec: http://localhost:9080
+
 ### Cleanup
 
 ```
