@@ -1,5 +1,7 @@
 ## Description
 
+A solution to [backend code challenge](./docs/backend_code_challenge.pdf)
+
 *eshop* service implements api [specification](./api/openapi.yaml)
 
 It supports two operations:
