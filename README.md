@@ -5,8 +5,8 @@ A solution to [backend code challenge](./docs/backend_code_challenge.pdf)
 *eshop* service implements api [specification](./api/openapi.yaml)
 
 It supports two operations:
-1. Create a cart with given line items. This operation will evaluate the cart with current promotions in place too.
-2. Fetch a cart with given cart identifier. This operation will evaluate the cart with current promotions in place too.  
+1. Create a cart with given line items. Before creating the cart, this operation will evaluate it with current promotions in place.
+2. Fetch a cart with given cart identifier. This operation will evaluate existing cart with current promotions in place.  
 
 
 This *eshop* service implementation uses cockroach-db as database. The database stores following information in given tables.
