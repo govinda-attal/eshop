@@ -27,7 +27,7 @@ docker-serve-all:
 	docker-compose up -d --build
 
 docker-deps:
-	docker-compose up -d crdb migrate
+	docker-compose up -d crdb migrate swagger-ui
 
 docker-clean:
 	docker-compose down
@@ -42,7 +42,6 @@ upload:
 	docker push gattal/eshop:latest	
 
 ship: init test pack upload clean
-
 
 api-gen:
 	mkdir -p pkg/eshop/api

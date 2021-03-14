@@ -2,6 +2,7 @@ package eshop
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -70,16 +71,30 @@ func (cs *CartService) evaluateCart(ctx context.Context, items []eshop.CartItem)
 	return EvaluateCart(ctx, items, invItems, itemProms)
 }
 
-func EvaluateCart(ctx context.Context, items []eshop.CartItem, invItems []eshop.InventoryItem, itemProms []eshop.ItemPromotions) (*eshop.CartState, error) {
-	itemQuantities := make(map[string]int, len(items))
-	for _, ci := range items {
-		itemQuantities[ci.Sku] = ci.Quantity
-	}
+func EvaluateCart(ctx context.Context, items []eshop.CartItem, invItems []eshop.InventoryItem, itemProms []eshop.ItemPromotions) (_ *eshop.CartState, err error) {
+
 	skuInvItems := make(map[string]eshop.InventoryItem, len(invItems))
-	for _, item := range invItems {
-		skuInvItems[item.Sku] = item
+	for _, stock := range invItems {
+		skuInvItems[stock.Sku] = stock
 	}
 
+	itemQuantities := make(map[string]int, len(items))
+	for _, ci := range items {
+		stock := skuInvItems[ci.Sku]
+		if stock.Quantity < ci.Quantity {
+			if err == nil {
+				err = apperr.BadRequest().WithMessage("cart item(s) stock is less than requested quantity")
+			}
+			var e *apperr.Error
+			if errors.As(err, &e) {
+				err = e.WithAdditionalMessages(fmt.Sprintf("item (%s) current availability %d", stock.Name, stock.Quantity))
+			}
+		}
+		itemQuantities[ci.Sku] = ci.Quantity
+	}
+	if err != nil {
+		return nil, err
+	}
 	skuProms := make(map[string][]eshop.Promotion, len(itemProms))
 	for _, item := range itemProms {
 		skuProms[item.Sku] = item.Promotions

@@ -48,7 +48,7 @@ func ItemPromotionsBySkus(ctx context.Context, db *sqlx.DB, skus []string) ([]es
 	}
 	var (
 		query = `SELECT sku, promotions 
-						FROM eshop.promotions WHERE sku in ('` + strings.Join(skus, `','`) + `')`
+						FROM eshop.promotions WHERE active = true and sku in ('` + strings.Join(skus, `','`) + `')`
 		rows []skuPromRow
 	)
 	if err := db.SelectContext(ctx, &rows, query); err != nil {

@@ -10,6 +10,17 @@ func MapAppError(err *apperr.Error) *Error {
 		Code:    int(err.Code),
 		Message: err.Message,
 	}
+	var dtls []ErrorDetail
+	for _, d := range err.Details {
+
+		dtls = append(dtls, ErrorDetail{
+			Message: d.Message,
+			Code:    strPtr(d.Code),
+		})
+	}
+	if len(dtls) > 0 {
+		e.Details = &dtls
+	}
 	return e
 }
 

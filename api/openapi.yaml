@@ -21,6 +21,21 @@ components:
           type: integer
         message:
           type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+          
+    
+    ErrorDetail:
+      type: object
+      required:
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
           
     CartItem:
       type: object
@@ -159,8 +174,10 @@ components:
       content:
         application/json:
           example:
-            code: 1
-            message: Internal Error
+            code: 3
+            message: cart item(s) stock is less than requested quantity
+            details:
+              - message: item (Alexa Speaker) current availablity 10
           schema:
             $ref: '#/components/schemas/Error'
     CartRs:
