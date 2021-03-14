@@ -46,7 +46,7 @@ make docker-serve-all
 
 >> a container named 'migrate' will run-to-complete and it will run the db migration scripts.
 
-Browse to [local swagger-ui](http://localhost:8080) to view the open-api specification and test the *eshop* service using easy to use interface. The api specification is documented with request and response examples.
+Browse to [local swagger-ui](http://localhost:8080) to view the open-api specification and test the *eshop* service with easy to use interface. The api specification is documented with request and response examples.
 
 
 ### Running deps in docker network and api on host machine
