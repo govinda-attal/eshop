@@ -135,6 +135,8 @@ components:
                 lineItems:
                   - sku: 43N23P
                     quantity: 1
+                  - sku: "234234"
+                    quantity: 1
             alexa:
               summary: buy three or more alexa speakers and have 10 percent discount on all
               value:
@@ -156,12 +158,79 @@ components:
       description: standard error response
       content:
         application/json:
+          example:
+            code: 1
+            message: Internal Error
           schema:
             $ref: '#/components/schemas/Error'
     CartRs:
       description: server side evaluated standard cart response
       content:
         application/json:
+          examples:
+            googlehomes:
+              summary: buy three google homes at price of two
+              value:
+                id: e73e0312-19fb-4c63-96ab-c208f7569bc9
+                state:
+                  baseAmount: 149.97
+                  cartAmount: 99.98
+                  lineItems:
+                  - discount: 49.99
+                    listPrice: 49.99
+                    promotions:
+                    - buy: 3
+                      info: buy 3 of (Google Home) for a price of 2
+                      type: PRICE
+                      units: 2
+                    quantity: 3
+                    salePrice: 99.98
+                    sku: 120P90
+            macbookpro:
+              summary: free raspberry pi with macbook pro
+              value:
+                id: 91bf9970-89d2-45b9-9c51-f3a05df4d6d8
+                state:
+                  baseAmount: 5459.99
+                  cartAmount: 5429.99
+                  lineItems:
+                  - discount: 0
+                    listPrice: 5399.99
+                    promotions:
+                    - buy: 1
+                      info: free 1 (Raspberry Pi B) with 1 of (MacBook Pro)
+                      item: '234234'
+                      type: FREE
+                      units: 1
+                    quantity: 1
+                    salePrice: 5399.99
+                    sku: 43N23P
+                  - discount: 30
+                    listPrice: 30
+                    promotions: []
+                    quantity: 2
+                    salePrice: 30
+                    sku: '234234'
+                    
+            alexa:
+              summary: buy three or more alexa speakers and have 10 percent discount on all
+              value:
+                id: d1b12def-fc77-460c-979a-4f9c6cd646c2
+                state:
+                  baseAmount: 328.5
+                  cartAmount: 295.65
+                  lineItems:
+                  - discount: 32.85
+                    listPrice: 109.5
+                    promotions:
+                    - buy: 3
+                      info: buy 3 or more (Alexa Speaker) and have 10.00 percent discount on all
+                      rate: 10
+                      type: DISCOUNT
+                    quantity: 3
+                    salePrice: 295.65
+                    sku: A304SD
+                
           schema:
             $ref: '#/components/schemas/Cart'
   

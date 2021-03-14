@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/go-logrusutil/logrusutil/logctx"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/govinda-attal/eshop/internal/eshop/db"
@@ -26,6 +25,36 @@ func NewCartService(ctx context.Context, db *sqlx.DB) *CartService {
 }
 
 func (cs *CartService) New(ctx context.Context, items []eshop.CartItem) (*eshop.Cart, error) {
+	state, err := cs.evaluateCart(ctx, items)
+	if err != nil {
+		return nil, err
+	}
+	id, err := db.NewCart(ctx, cs.db, items)
+	if err != nil {
+		return nil, apperr.Internal(err)
+	}
+	return &eshop.Cart{
+		Id:    id,
+		State: state,
+	}, nil
+}
+
+func (cs *CartService) Cart(ctx context.Context, id string) (*eshop.Cart, error) {
+	items, err := db.GetCartItems(ctx, cs.db, id)
+	if err != nil {
+		return nil, apperr.Internal(err)
+	}
+	state, err := cs.evaluateCart(ctx, items)
+	if err != nil {
+		return nil, err
+	}
+	return &eshop.Cart{
+		Id:    id,
+		State: state,
+	}, nil
+}
+
+func (cs *CartService) evaluateCart(ctx context.Context, items []eshop.CartItem) (*eshop.CartState, error) {
 	skus := make([]string, len(items))
 	for i, ci := range items {
 		skus[i] = ci.Sku
@@ -38,19 +67,7 @@ func (cs *CartService) New(ctx context.Context, items []eshop.CartItem) (*eshop.
 	if err != nil {
 		return nil, apperr.Internal(err)
 	}
-	state, err := EvaluateCart(ctx, items, invItems, itemProms)
-	cartID, err := db.NewCart(ctx, cs.db, items)
-	if err != nil {
-		return nil, apperr.Internal(err)
-	}
-	return &eshop.Cart{
-		Id:    cartID,
-		State: state,
-	}, nil
-}
-
-func (cs *CartService) Cart(ctx context.Context, id string) (*eshop.Cart, error) {
-	return nil, apperr.NotImplemented()
+	return EvaluateCart(ctx, items, invItems, itemProms)
 }
 
 func EvaluateCart(ctx context.Context, items []eshop.CartItem, invItems []eshop.InventoryItem, itemProms []eshop.ItemPromotions) (*eshop.CartState, error) {
@@ -74,14 +91,9 @@ func EvaluateCart(ctx context.Context, items []eshop.CartItem, invItems []eshop.
 func evaluateCart(ctx context.Context, itemQuantities map[string]int, invItems map[string]eshop.InventoryItem, skuProms map[string][]eshop.Promotion) (*eshop.CartState, error) {
 
 	var eii []*eshop.EvaluatedItem
-	log := logctx.From(ctx)
-	log.WithField("itemQuantities", itemQuantities).Info("item quantities")
-	log.WithField("invItems", invItems).Info("item quantities")
-	log.WithField("skuProms", skuProms).Info("promotions")
 	eiiBySku := make(map[string]*eshop.EvaluatedItem, len(itemQuantities))
 	state := new(eshop.CartState)
 	applyPromotions := func(ei *eshop.EvaluatedItem, proms []eshop.Promotion) *eshop.EvaluatedItem {
-		var applied bool
 		// promotions are in order of priority
 		// only one will be applied
 		for _, prom := range proms {
@@ -94,10 +106,9 @@ func evaluateCart(ctx context.Context, itemQuantities map[string]int, invItems m
 				prom.Info = fmt.Sprintf("buy %d of (%s) for a price of %d", prom.Buy, ei.Name, prom.Units)
 				q, r := divmod(quantity, prom.Buy)
 				ei.Promotions = append(ei.Promotions, prom)
-				// ei.SalePrice += (ei.ListPrice * float32(prom.Units) * float32(q)) + (ei.ListPrice * float32(r))
 				ei.SalePrice += ei.ListPrice * float32(prom.Units) * float32(q)
 				itemQuantities[ei.Sku] = r
-				applied = true
+				return ei
 			case eshop.PromotionDiscount:
 				quantity := itemQuantities[ei.Sku]
 				if quantity < prom.Buy {
@@ -106,9 +117,9 @@ func evaluateCart(ctx context.Context, itemQuantities map[string]int, invItems m
 				prom.Info = fmt.Sprintf("buy %d or more (%s) and have %.2f percent discount on all", prom.Buy, ei.Name, prom.Rate)
 				atRate := (100.00 - prom.Rate) / 100.00
 				ei.Promotions = append(ei.Promotions, prom)
-				// ei.SalePrice += ((ei.ListPrice * float32(prom.Units) * float32(q)) * atRate) + (ei.ListPrice * float32(r))
 				ei.SalePrice += (ei.ListPrice * float32(quantity)) * atRate
 				itemQuantities[ei.Sku] = 0
+				return ei
 			case eshop.PromotionDiscountEvery:
 				quantity := itemQuantities[ei.Sku]
 				if quantity < prom.Buy {
@@ -118,10 +129,9 @@ func evaluateCart(ctx context.Context, itemQuantities map[string]int, invItems m
 				q, r := divmod(quantity, prom.Buy)
 				atRate := (100.00 - prom.Rate) / 100.00
 				ei.Promotions = append(ei.Promotions, prom)
-				// ei.SalePrice += ((ei.ListPrice * float32(prom.Units) * float32(q)) * atRate) + (ei.ListPrice * float32(r))
 				ei.SalePrice += (ei.ListPrice * float32(prom.Buy) * float32(q)) * atRate
 				itemQuantities[ei.Sku] = r
-				applied = true
+				return ei
 			case eshop.PromotionFree:
 				quantity := itemQuantities[ei.Sku]
 				if quantity < prom.Buy {
@@ -136,17 +146,12 @@ func evaluateCart(ctx context.Context, itemQuantities map[string]int, invItems m
 					continue
 				}
 				prom.Info = fmt.Sprintf("free %d (%s) with %d of (%s)", prom.Units, related.Name, prom.Buy, ei.Name)
-				// Buy 3 get 1 Free
-				// (14) & (9) (5)
-				q, r := divmod(quantity, prom.Buy) // 4, 2
-				relR := relQuantity - q            // 5
+				q, r := divmod(quantity, prom.Buy)
+				relR := relQuantity - q
 				ei.Promotions = append(ei.Promotions, prom)
 				ei.SalePrice += ei.ListPrice * float32(q*prom.Buy)
 				itemQuantities[ei.Sku] = r
 				itemQuantities[related.Sku] = relR
-				applied = true
-			}
-			if applied {
 				return ei
 			}
 		}
@@ -170,7 +175,6 @@ func evaluateCart(ctx context.Context, itemQuantities map[string]int, invItems m
 		eii = append(eii, ei)
 		eiiBySku[ei.Sku] = ei
 	}
-	log.WithField("list", eii).Info("items to evaluate")
 	eii = eshop.EvalItemsPriceReverse(eii)
 	for i, ei := range eii {
 		eii[i] = applyPromotions(ei, skuProms[ei.Sku])

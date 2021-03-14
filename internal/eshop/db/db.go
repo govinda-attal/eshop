@@ -29,6 +29,17 @@ func NewCart(ctx context.Context, db *sqlx.DB, cii []eshop.CartItem) (id string,
 	return id, err
 }
 
+func GetCartItems(ctx context.Context, db *sqlx.DB, id string) ([]eshop.CartItem, error) {
+	var (
+		query = `SELECT cart FROM eshop.carts WHERE id = $1`
+		items CartItems
+	)
+	if err := db.GetContext(ctx, &items, query, id); err != nil {
+		return nil, err
+	}
+	return []eshop.CartItem(items), nil
+}
+
 func ItemPromotionsBySkus(ctx context.Context, db *sqlx.DB, skus []string) ([]eshop.ItemPromotions, error) {
 
 	type skuPromRow struct {

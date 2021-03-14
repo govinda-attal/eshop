@@ -3,9 +3,9 @@ init:
 	go mod tidy
 
 test:
-	go test ./...
+	go test ./... -race -count=1 -cover
 
-build: 
+build: test
 	rm -rf ./dist
 	mkdir dist/
 	mkdir dist/configs
@@ -21,7 +21,16 @@ serve: build
 	cd dist && ./eshop serve
 
 docker-serve:
+	docker-compose up -d --build eshop swagger-ui
+
+docker-serve-all:
 	docker-compose up -d --build
+
+docker-deps:
+	docker-compose up -d crdb migrate
+
+docker-clean:
+	docker-compose down
 
 clean:
 	rm ./dist/ -rf

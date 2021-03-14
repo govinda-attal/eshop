@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	// oapigenmware "github.com/deepmap/oapi-codegen/pkg/middleware"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -42,6 +44,16 @@ func ServerWithBasePath(path string) ServerOption {
 func ServerWithPrometheusHandler(path string) ServerOption {
 	return func(ws *Server) {
 		ws.mux.Handle(path, promhttp.Handler())
+	}
+}
+
+func ServerWithApiSpec(swagger *openapi3.Swagger) ServerOption {
+	return func(ws *Server) {
+		// swagger.Servers = nil
+		// ws.echo.Use(oapigenmware.OapiRequestValidator(swagger))
+		ws.echo.GET(ws.basePath, func(ec echo.Context) error {
+			return ec.JSON(http.StatusOK, swagger)
+		})
 	}
 }
 

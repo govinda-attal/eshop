@@ -70,10 +70,15 @@ func setupWebServer(ctx context.Context, srv api.ServerInterface) (*web.Server, 
 	if err != nil {
 		return nil, err
 	}
+	swagger, err := api.GetSwagger()
+	if err != nil {
+		return nil, err
+	}
 	ws := web.NewServer(ctx, cfg.Port,
 		web.ServerWithGraceShutdown(cfg.ShutdownGracePeriod),
 		web.ServerWithHealthCheck("/health", health),
 		web.ServerWithPrometheusHandler("/metrics"),
+		web.ServerWithApiSpec(swagger),
 	)
 	api.RegisterHandlersWithBaseURL(ws.Echo(), srv, "/api")
 	return ws, nil

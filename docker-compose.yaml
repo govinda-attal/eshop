@@ -1,29 +1,45 @@
 version: '3.7'
 
 services:
+  eshop:
+    hostname: eshop
+    container_name: eshop
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_NAME : eshop
+    image:
+      gattal/eshop
+    command: sh -c "sleep 7s && ./eshop serve"
+    environment:
+     - APP_DB_URL=postgres://root@crdb:26257/eshop?sslmode=disable
+     - APP_DB_MIGRATEURL=cockroachdb://root@crdb:26257?sslmode=disable
+    depends_on:
+      - crdb
 
-  
-  
-  # eshop:
-  #   hostname: eshop
-  #   container_name: eshop
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #     args:
-  #       APP_NAME : eshop
-  #   image:
-  #     gattal/eshop
-  #   command: sh -c "printenv && sleep 5s && ./eshop migrate up && ./eshop serve"
-  #   environment:
-  #    - APP_DB_URL=postgres://root@crdb:26257/eshop?sslmode=disable
-  #    - APP_DB_MIGRATEURL=cockroachdb://root@crdb:26257?sslmode=disable
-  #   depends_on:
-  #     - crdb
-  #   ports: 
-  #     - 9080:9080
-  #   networks:
-  #     - default
+    ports: 
+      - 9080:9080
+    networks:
+      - default
+
+  migrate:
+    hostname: migrate
+    container_name: migrate
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_NAME : eshop
+    image:
+      gattal/eshop
+    command: sh -c "sleep 5s && ./eshop migrate up"
+    environment:
+      - APP_DB_MIGRATEURL=cockroachdb://root@crdb:26257?sslmode=disable
+    depends_on:
+      - crdb
+    networks:
+      - default
 
   crdb:
     container_name: crdb
@@ -31,8 +47,22 @@ services:
     image: cockroachdb/cockroach:v20.2.5
     ports:
       - 26257:26257
+      # - 7080:7080
+    command: start-single-node --insecure --http-addr=localhost:7080
+    networks:
+      - default
+  
+  swagger-ui:
+    hostname: swagger-ui
+    container_name: swagger-ui
+    image: swaggerapi/swagger-ui
+    restart: always
+    environment: 
+      - API_URL=http://localhost:9080
+    ports: 
       - 8080:8080
-    command: start-single-node --insecure
+    depends_on:
+      - eshop
     networks:
       - default
   
