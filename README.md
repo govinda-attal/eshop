@@ -9,16 +9,16 @@ It supports two operations:
 2. Fetch a cart with given cart identifier. This operation will evaluate existing cart with current promotions in place.  
 
 
-This *eshop* service implementation uses cockroach-db as database. The database stores following information in given tables.
+This *eshop* service implementation uses cockroach-db as database. It is used to store following information.
 1. current inventory stock in table eshop.inventory
 2. current active promotions in table eshop.promotions
 3. user/shopper carts in table eshop.carts
 
-On setup, the database is pre-populated with state as advised in the test description with help of migration scripts at [here](./scripts/db/migrations)
+On setup, the database is populated with inventory and current promotions as advised in the test description with help of migration scripts at [here](./scripts/db/migrations)
 
 ## Unit Tests
 
-Logic of a cart evaluation with current promotions is unit tested with test cases in [cart_test.go](./internal/eshop/cart_test.go)
+Logic of a cart evaluation with current promotions can be tested with test cases in [cart_test.go](./internal/eshop/cart_test.go)
 
 ```
 make test
@@ -46,7 +46,7 @@ make docker-serve-all
 
 >> a container named 'migrate' will run-to-complete and it will run the db migration scripts.
 
-Browse to [swagger-ui](http://localhost:8080) to view the open-api specification and test the *eshop* service using easy to use interface. The api specification is documented with request and response examples.
+Browse to [local swagger-ui](http://localhost:8080) to view the open-api specification and test the *eshop* service using easy to use interface. The api specification is documented with request and response examples.
 
 
 ### Running deps in docker network and api on host machine
@@ -59,7 +59,7 @@ make docker-deps
 make serve
 ```
 
-Once service is running browse to [swagger-ui](http://localhost:8080) to view the open-api specification and test the *eshop* service.
+Once service is running browse to [local swagger-ui](http://localhost:8080) to view the open-api specification and test the *eshop* service.
 
 ### Cleanup
 
